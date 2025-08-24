@@ -40,7 +40,7 @@ CHART_CONTENT="## Container Image Ecosystem Comparison
 | **Public Images** | **${OUR_COUNT}** | **${CHAINGUARD_COUNT}** | **${REPLICATED_COUNT}** |
 | **Build System** | Nix + nix2container | apko + melange | Buildpacks |
 | **Base** | NixOS/nixpkgs | Alpine/glibc | Various |
-| **Security Focus** | Reproducible builds / minimal attack surface | Minimal attack surface | Supply chain security |
+| **Security Focus** | Reproducible builds & minimal attack surface | Minimal attack surface | Supply chain security |
 | **License** | Open Source | Open Source For Now | Commercial |
 
 </div>
