@@ -1,7 +1,7 @@
 # Non-root user configuration for container images
 { lib, ... }:
 
-{
+rec {
   # Standard non-root user configuration
   user = {
     uid = 1000;
@@ -17,4 +17,17 @@
     "HOME=/home/nonroot"
     "USER=nonroot"
   ];
+  
+  # Default container config for non-root users (without Cmd - needs to be added per image)
+  defaultConfig = {
+    User = userString;
+    WorkingDir = "/workspace";
+  };
+  
+  # Function to create default user environment
+  mkDefaultUserEnv = pkgs: extraDirs ? []:
+    pkgs.callPackage ./mkUserEnvironment.nix {} {
+      inherit user;
+      extraDirs = [ "/workspace" ] ++ extraDirs;
+    };
 }

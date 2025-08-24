@@ -1,4 +1,4 @@
-{ mkUserEnvironment, nix2container, lib, buildEnv, pkgs, base, nonRoot, ... }:
+{ nix2container, lib, buildEnv, pkgs, base, nonRoot, ... }:
 
 let
   # SOPS tools and dependencies
@@ -13,12 +13,8 @@ let
     gnupg
   ];
 
-  # Create user environment with non-root user  
-  userEnv = mkUserEnvironment {
-    user = nonRoot.user;
-    workingDir = "/app";
-    extraDirs = [ "/workspace" ];
-  };
+  # Use default non-root user environment
+  userEnv = nonRoot.mkDefaultUserEnv [];
 
 in
 nix2container.buildImage {
@@ -32,13 +28,10 @@ nix2container.buildImage {
     })
   ];
 
-  config = {
-    Cmd = [ "${pkgs.bash}/bin/bash" ];
-    WorkingDir = "/app";
-    User = nonRoot.userString;
+  config = nonRoot.defaultConfig // {
     Env = base.defaultEnv ++ nonRoot.userEnv ++ [
       "PATH=${lib.makeBinPath sopsPackages}"
-      "GNUPGHOME=/workspace/.gnupg"
+      "GNUPGHOME=~/.gnupg"
     ];
     Labels = base.defaultLabels;
   };

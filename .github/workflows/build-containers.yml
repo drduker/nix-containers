@@ -146,3 +146,9 @@ jobs:
           echo "  - Trivy for additional security checks"
           echo "  - Upload SBOM artifacts to GitHub"
           echo "  - Fail builds on critical vulnerabilities"
+
+  # TODO: Add licensing labels
+    # echo "TODO: Implement licensing label addition with:"
+    # echo "  - Check for a LICENSE file in the repository"
+    # echo "  - Determine the license type (e.g., MIT, Apache 2.0)"
+    # echo "  - Add the appropriate license label to the GitHub repository"

@@ -78,17 +78,38 @@
           buildInputs = with pkgs; [
             nix
             docker
+            act
             jq
+            git
+            gh
+            gnumake
+            just
           ];
           shellHook = ''
             echo "🚀 Nix Containers Development Environment"
-            echo "Available commands:"
-            echo "  nix build .#<package-name>     - Build a container image"
-            echo "  nix build .#load-all-to-docker - Load all images to Docker"
-            echo "  docker images                  - List Docker images"
             echo ""
-            echo "Available packages:"
+            echo "📦 Local Building:"
+            echo "  nix build .#<image-name>                    - Build container image"
+            echo "  nix build .#load-<image-name>-to-docker     - Build and load to Docker"
+            echo "  nix build .#load-all-to-docker && ./result/bin/load-all-to-docker"
+            echo ""
+            echo "🐳 Docker Commands:"
+            echo "  docker images                               - List Docker images"
+            echo "  docker run -it <image-name> bash           - Run container interactively"
+            echo ""
+            echo "🔄 GitHub Actions Testing:"
+            echo "  act -l                                      - List available workflows"
+            echo "  act -j build-containers                     - Test build workflow locally"
+            echo "  act --container-architecture linux/amd64   - Force x86_64 architecture"
+            echo ""
+            echo "📊 Statistics:"
+            echo "  ./scripts/update-image-stats.sh            - Update README comparison chart"
+            echo ""
+            echo "📋 Available images:"
             echo "  ${pkgs.lib.concatStringsSep ", " imageNames}"
+            echo ""
+            echo "💡 Quick start:"
+            echo "  nix build .#load-cpp-runtime-to-docker     - Example: build and load cpp-runtime"
           '';
         };
       };
