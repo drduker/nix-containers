@@ -25,9 +25,9 @@ rec {
   };
   
   # Function to create default user environment
-  mkDefaultUserEnv = pkgs: extraDirs ? []:
+  mkDefaultUserEnv = pkgs: extraDirs:
     pkgs.callPackage ./mkUserEnvironment.nix {} {
       inherit user;
-      extraDirs = [ "/workspace" ] ++ extraDirs;
+      extraDirs = [ "/workspace" ] ++ (if extraDirs == null then [] else extraDirs);
     };
 }
