@@ -34,14 +34,72 @@ A collection of container images built with nix2container, featuring dynamic dis
 ---
 ## Available Images
 
+*Updated: 2025-08-24*
+
+### Content & Communication
+
+- **hugo** - Fast and modern static site generator
+- **maddy** - Modern mail server with SMTP, IMAP, and more
+
+### Runtime Environments
+
 - **cpp-runtime** - Minimal runtime for C++ and Rust binaries
-- **cpp-build-env** - Complete C++ development environment with GCC, CMake, GTest
-- **rust-build-env** - Complete Rust development environment with Cargo, Clippy, rust-analyzer
+- **bash** - GNU Bash shell environment
+- **busybox** - Minimal Unix utilities in a single executable
+
+### Nix Ecosystem
+
+- **nix** - Nix package manager and build system
+- **nix-flakes** - Nix with flakes experimental feature enabled
+- **nix-unstable** - Nix unstable version with latest features
+- **nix-unstable-static** - Statically linked Nix unstable version
+- **attic** - Multi-tenant Nix binary cache client
+- **cachix** - Binary cache service for Nix packages
+- **cachix-flakes** - Binary cache service with Nix flakes support
+
+### Kubernetes & DevOps
+
 - **kubectl** - Kubernetes command-line tool
+- **kubernetes-helm** - Package manager for Kubernetes
 - **dragonfly-operator** - Kubernetes operator for Dragonfly instances
 - **external-dns** - External DNS controller for Kubernetes
-- **sops-base** - SOPS encryption tool with GPG support
+- **docker-compose** - Tool for defining multi-container Docker applications
 
+### Development Tools
+
+- **cpp-build-env** - Complete C++ development environment with GCC, CMake, GTest
+- **rust-build-env** - Complete Rust development environment with Cargo, Clippy, rust-analyzer
+- **devcontainer** - Development container with common tools
+- **devenv** - Fast, declarative, reproducible development environments
+
+### Security & Auth
+
+- **sops** - SOPS encryption tool with GPG support
+- **pocket-id** - Personal identity provider for OAuth2/OIDC
+
+### Web Servers & Networking
+
+- **nginx** - High-performance HTTP server and reverse proxy
+- **caddy** - Modern HTTP/2 web server with automatic HTTPS
+- **curl** - Command line tool for transferring data with URLs
+
+### Quick Build Commands
+
+```bash
+# Build and load specific images
+nix build .#load-<image-name>-to-docker
+
+# Examples:
+nix build .#load-nginx-to-docker        # Web server
+nix build .#load-cpp-build-env-to-docker  # C++ development
+nix build .#load-rust-build-env-to-docker # Rust development
+nix build .#load-kubectl-to-docker        # Kubernetes CLI
+
+# Build and load all images at once
+nix build .#load-all-to-docker && ./result/bin/load-all-to-docker
+```
+
+---
 ## Local Development
 
 ### Build and Load Single Image to Docker
