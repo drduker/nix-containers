@@ -1,0 +1,148 @@
+name: Build and Push Container Images
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Daily build at 2 AM UTC to check for package updates
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job to dynamically discover all images
+  discover-images:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Generate matrix from images folder
+        id: set-matrix
+        run: |
+          echo "Discovering images in images/ folder..."
+          matrix='{"include":['
+          first=true
+          for dir in images/*/; do
+            if [ -d "$dir" ] && [ -f "$dir/default.nix" ]; then
+              image_name=$(basename "$dir")
+              if [ "$first" = true ]; then
+                first=false
+              else
+                matrix="$matrix,"
+              fi
+              matrix="$matrix{\"name\":\"$image_name\",\"path\":\"$dir\"}"
+              echo "Found image: $image_name at $dir"
+            fi
+          done
+          matrix="$matrix]}"
+          echo "Generated matrix: $matrix"
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    needs: discover-images
+    runs-on: ubuntu-latest
+    container:
+      image: nixpkgs/nix-flakes:latest
+      options: --privileged
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix: ${{ fromJSON(needs.discover-images.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Docker in Nix container
+        run: |
+          nix profile install nixpkgs#docker
+          # Start Docker daemon in background
+          dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2376 &
+          sleep 5
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: nix-community
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: ${{ secrets.CACHIX_AUTH_TOKEN == '' }}
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build nix2container image
+        run: |
+          # All images are now built from root flake
+          nix build .#${{ matrix.name }} --print-build-logs
+
+      - name: Load image to Docker daemon
+        run: |
+          # Load the built image into Docker
+          ./result/copyToDockerDaemon
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+
+      - name: Tag and push image
+        run: |
+          # Get the image ID from Docker
+          IMAGE_ID=$(docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | grep ${{ matrix.name }} | awk '{print $2}' | head -1)
+          
+          # Tag and push all metadata tags
+          echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
+            echo "Tagging and pushing: $tag"
+            docker tag $IMAGE_ID $tag
+            docker push $tag
+          done
+
+  # TODO: Implement smart daily build pipeline
+  check-package-updates:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Placeholder for package update detection
+        run: |
+          echo "TODO: Implement package update detection logic"
+          echo "This job should:"
+          echo "  - Check if any packages in flake.lock have updates"
+          echo "  - Compare current package versions with previous build"
+          echo "  - Only trigger builds if packages have changed"
+          echo "  - Store package fingerprints for comparison"
+
+  # TODO: Add security scanning jobs
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: always() && needs.build-and-push.result == 'success'
+    steps:
+      - name: Placeholder for security scanning
+        run: |
+          echo "TODO: Implement security scanning with:"
+          echo "  - Grype for vulnerability scanning"
+          echo "  - Syft for SBOM generation" 
+          echo "  - Trivy for additional security checks"
+          echo "  - Upload SBOM artifacts to GitHub"
+          echo "  - Fail builds on critical vulnerabilities"
