@@ -24,8 +24,8 @@ A collection of container images built with nix2container, featuring dynamic dis
 | **Public Images** | **27** | **51** | **31 (zero public)** |
 | **Build System** | Nix + nix2container | apko + melange | Buildpacks |
 | **Base** | NixOS/nixpkgs | Alpine/glibc | Various |
-| **Security Focus** | Reproducible builds | Minimal attack surface | Supply chain security |
-| **License** | Open Source | Open Source | Commercial |
+| **Security Focus** | Reproducible builds & minimal attack surface | Minimal attack surface | Supply chain security |
+| **License** | Open Source | Open Source For Now | Commercial |
 
 </div>
 
