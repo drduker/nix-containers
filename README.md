@@ -166,7 +166,7 @@ docker push your-registry.com/sops-base:latest
 ```bash
 #!/bin/bash
 REGISTRY="your-registry.com"
-IMAGES=("cpp-runtime" "cpp-build-env" "rust-build-env" "kubectl" "dragonfly-operator" "external-dns" "sops-base")
+IMAGES_RAW=($(find images -name "default.nix" -exec dirname {} \; | sort | xargs -I {} basename {}))
 
 for image in "${IMAGES[@]}"; do
     echo "= Pushing $image..."

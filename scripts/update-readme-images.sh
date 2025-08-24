@@ -10,6 +10,14 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🔍 Updating Available Images section in README...${NC}"
 
+# Dynamically generate IMAGES array from folders
+echo -e "${YELLOW}Discovering images from folders...${NC}"
+IMAGES_RAW=($(find images -name "default.nix" -exec dirname {} \; | sort | xargs -I {} basename {}))
+IMAGES_STRING=$(printf '"%s" ' "${IMAGES_RAW[@]}")
+IMAGES_ARRAY="IMAGES=(${IMAGES_STRING})"
+
+echo -e "${GREEN}Generated IMAGES array: ${IMAGES_ARRAY}${NC}"
+
 # Image descriptions mapping
 declare -A descriptions=(
   ["attic"]="Multi-tenant Nix binary cache client"
