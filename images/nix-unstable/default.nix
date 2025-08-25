@@ -3,7 +3,7 @@
 let
   # nix-unstable packages
   nix_unstablePackages = with pkgs; [
-    nixVersions.unstable
+    nixVersions.latest
     bash
     coreutils
   ];

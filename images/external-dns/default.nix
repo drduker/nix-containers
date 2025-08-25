@@ -10,7 +10,7 @@ let
       owner = "kubernetes-sigs";
       repo = "external-dns";
       rev = "v${version}";
-      hash = "sha256-uE9q4+FqZHiuRVdCNPfKt3oQDxrRGr7s7DZ+2HLCQGM=";
+      hash = "sha256-5SoqRYKS506vVI8RsuAGrlKR/6OuuZkzO5U8cAMv51I=";
     };
 
     vendorHash = "sha256-TwuJ4WRCBWpFm5Xeeh8FqGw6cyEQEGN6wjCWxvq2HL0=";
