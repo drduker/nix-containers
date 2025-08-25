@@ -9,7 +9,7 @@ let
   ];
 
   # Use default non-root user environment
-  userEnv = nonRoot.mkDefaultUserEnv [];
+  userEnv = nonRoot.mkDefaultUserEnv pkgs [];
 
 in
 nix2container.buildImage {
