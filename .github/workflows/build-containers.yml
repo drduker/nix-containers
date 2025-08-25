@@ -49,50 +49,41 @@ jobs:
   build-and-push:
     needs: discover-images
     runs-on: ubuntu-latest
-    container:
-      image: nixos/nix:latest
-      options: --privileged
     permissions:
       contents: read
       packages: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     strategy:
       matrix: ${{ fromJSON(needs.discover-images.outputs.matrix) }}
 
     steps:
-      - name: Setup container environment
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
         run: |
-          # Setup Nix configuration first
+          # Install Nix using the official installer
+          curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
+          
+          # Source Nix environment
+          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
+          
+          # Setup Nix configuration 
           mkdir -p ~/.config/nix
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
           
-          # Set GitHub token as environment variable for this session
-          export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          
-          # Install Node.js for GitHub Actions compatibility using explicit experimental features
-          nix --extra-experimental-features "nix-command flakes" profile add nixpkgs#nodejs_20
-          
-          # Create GitHub Actions compatible directory structure in a writable location
-          mkdir -p /tmp/github-actions/node20/bin
-          ln -sf $(which node) /tmp/github-actions/node20/bin/node
-          ln -sf $(which npm) /tmp/github-actions/node20/bin/npm
-          
-          # Update PATH to include our Node.js installation
-          echo "$(dirname $(which node))" >> $GITHUB_PATH
-          echo "/tmp/github-actions/node20/bin" >> $GITHUB_PATH
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          # Add Nix to PATH for subsequent steps
+          echo "/nix/var/nix/profiles/default/bin" >> $GITHUB_PATH
 
       - name: Setup Docker
         run: |
-          # Set GitHub token for authenticated access
-          export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          # Install and start Docker using explicit experimental features
-          nix --extra-experimental-features "nix-command flakes" profile add nixpkgs#docker
-          dockerd --host=unix:///var/run/docker.sock &
-          sleep 10
+          # Source Nix environment
+          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
+          # Docker is already available on Ubuntu runners, just start the daemon if needed
+          sudo systemctl start docker
 
       - name: Login to Container Registry
         uses: docker/login-action@v3
@@ -103,8 +94,8 @@ jobs:
 
       - name: Build nix2container image
         run: |
-          # Set GitHub token for authenticated access
-          export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          # Source Nix environment
+          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
           # Build image using Nix flakes with explicit experimental features
           nix --extra-experimental-features "nix-command flakes" build .#${{ matrix.name }} --print-build-logs
 
