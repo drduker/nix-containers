@@ -67,8 +67,8 @@ jobs:
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
           
-          # Install Node.js for GitHub Actions compatibility
-          nix profile install nixpkgs#nodejs_20
+          # Install Node.js for GitHub Actions compatibility using explicit experimental features
+          nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#nodejs_20
           # Create symlinks in expected locations
           mkdir -p /__e/node20/bin
           ln -sf $(which node) /__e/node20/bin/node
@@ -79,8 +79,8 @@ jobs:
 
       - name: Setup Docker
         run: |
-          # Install and start Docker
-          nix profile install nixpkgs#docker
+          # Install and start Docker using explicit experimental features
+          nix --extra-experimental-features "nix-command flakes" profile install nixpkgs#docker
           dockerd --host=unix:///var/run/docker.sock &
           sleep 10
 
@@ -93,8 +93,8 @@ jobs:
 
       - name: Build nix2container image
         run: |
-          # Build image using Nix flakes
-          nix build .#${{ matrix.name }} --print-build-logs
+          # Build image using Nix flakes with explicit experimental features
+          nix --extra-experimental-features "nix-command flakes" build .#${{ matrix.name }} --print-build-logs
 
       - name: Load image to Docker daemon
         run: |
