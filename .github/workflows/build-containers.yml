@@ -50,7 +50,7 @@ jobs:
     needs: discover-images
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/nix-community/docker-nixpkgs/nix-unstable:latest
+      image: nixos/nix:latest
       options: --privileged
     permissions:
       contents: read
