@@ -135,7 +135,7 @@ jobs:
             
             # Load using nix2container copyTo function
             echo "Loading image using nix2container..."
-            nix --extra-experimental-features "nix-command flakes" run .#${{ matrix.name }}.copyTo -- docker-daemon:
+            nix --extra-experimental-features "nix-command flakes" run .#${{ matrix.name }}.copyTo -- docker-daemon:${{ matrix.name }}:latest
             
             # Get the loaded image details
             echo "=== Available Docker images ==="
