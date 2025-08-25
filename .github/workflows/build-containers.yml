@@ -62,6 +62,11 @@ jobs:
     steps:
       - name: Setup container environment
         run: |
+          # Setup Nix configuration first
+          mkdir -p ~/.config/nix
+          echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+          echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
+          
           # Install Node.js for GitHub Actions compatibility
           nix profile install nixpkgs#nodejs_20
           # Create symlinks in expected locations
@@ -71,12 +76,6 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup Nix configuration
-        run: |
-          mkdir -p ~/.config/nix
-          echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-          echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
 
       - name: Setup Docker
         run: |
