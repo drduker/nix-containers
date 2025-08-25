@@ -50,7 +50,7 @@ jobs:
     needs: discover-images
     runs-on: ubuntu-latest
     container:
-      image: nixpkgs/nix-flakes:latest
+      image: ghcr.io/nix-community/docker-nixpkgs/nix-unstable:latest
       options: --privileged
     permissions:
       contents: read
@@ -63,12 +63,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Docker in Nix container
+      - name: Setup Nix configuration
         run: |
+          mkdir -p ~/.config/nix
+          echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+          echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
+
+      - name: Setup Docker
+        run: |
+          # Install Docker in the Nix container
           nix profile install nixpkgs#docker
-          # Start Docker daemon in background
-          dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2376 &
-          sleep 5
+          # Start Docker daemon
+          dockerd --host=unix:///var/run/docker.sock &
+          sleep 10
 
       - name: Login to Container Registry
         uses: docker/login-action@v3
