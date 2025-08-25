@@ -115,40 +115,64 @@ jobs:
           nix --extra-experimental-features "nix-command flakes" build .#${{ matrix.name }} --print-build-logs
           echo "BUILD_SUCCESS=true" >> $GITHUB_ENV
 
-      - name: Load image to Docker daemon
+      - name: Load and push image to registry
         if: env.NIX_INSTALLED == 'true' && env.BUILD_SUCCESS == 'true'
         continue-on-error: true
         run: |
-          # Load the built image into Docker
-          ./result/copyToDockerDaemon
-
-      - name: Extract metadata
-        id: meta
-        if: env.NIX_INSTALLED == 'true' && env.BUILD_SUCCESS == 'true'
-        continue-on-error: true
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.name }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=schedule,pattern={{date 'YYYYMMDD'}}
-
-      - name: Tag and push image
-        if: env.NIX_INSTALLED == 'true' && env.BUILD_SUCCESS == 'true'
-        continue-on-error: true
-        run: |
-          # Get the image ID from Docker
-          IMAGE_ID=$(docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | grep ${{ matrix.name }} | awk '{print $2}' | head -1)
-          
-          # Tag and push all metadata tags
-          echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
-            echo "Tagging and pushing: $tag"
-            docker tag $IMAGE_ID $tag
-            docker push $tag
-          done
+          # Load the nix2container image and push directly to registry
+          if [ -f ./result ]; then
+            echo "Loading nix2container image..."
+            # Check what nix2container actually created
+            ls -la ./result* || true
+            
+            # nix2container creates different outputs depending on version
+            if [ -f ./result ]; then
+              echo "Executing nix2container result file..."
+              bash ./result
+            elif [ -f ./result/bin/copyToDockerDaemon ]; then
+              echo "Using copyToDockerDaemon from bin..."
+              ./result/bin/copyToDockerDaemon
+            else
+              echo "Looking for any executable in result..."
+              find ./result -name "*copyToDockerDaemon*" -exec {} \; || true
+              find ./result -type f -executable -exec {} \; || true
+            fi
+            
+            # Get the loaded image details
+            echo "=== Available Docker images ==="
+            docker images
+            
+            # Find the most recently created image (should be ours)
+            IMAGE_ID=$(docker images --format "{{.ID}}" | head -1)
+            if [ -z "$IMAGE_ID" ]; then
+              echo "Error: No image found after loading"
+              exit 1
+            fi
+            echo "Found image ID: $IMAGE_ID"
+            
+            # Generate the target registry URL
+            REGISTRY_URL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.name }}"
+            
+            # Tag with different versions
+            docker tag "$IMAGE_ID" "${REGISTRY_URL}:latest"
+            docker tag "$IMAGE_ID" "${REGISTRY_URL}:${{ github.sha }}"
+            if [ "${{ github.ref_name }}" != "main" ]; then
+              docker tag "$IMAGE_ID" "${REGISTRY_URL}:${{ github.ref_name }}"
+            fi
+            
+            # Push all tags
+            echo "Pushing to registry..."
+            docker push "${REGISTRY_URL}:latest"
+            docker push "${REGISTRY_URL}:${{ github.sha }}"
+            if [ "${{ github.ref_name }}" != "main" ]; then
+              docker push "${REGISTRY_URL}:${{ github.ref_name }}"
+            fi
+            
+            echo "✅ Successfully pushed ${{ matrix.name }} to registry"
+          else
+            echo "Error: Could not find nix2container result file"
+            exit 1
+          fi
 
       - name: Build Summary
         if: always()
