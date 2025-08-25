@@ -125,18 +125,17 @@ jobs:
             # Check what nix2container actually created
             ls -la ./result* || true
             
-            # nix2container creates different outputs depending on version
-            if [ -f ./result ]; then
-              echo "Executing nix2container result file..."
-              bash ./result
-            elif [ -f ./result/bin/copyToDockerDaemon ]; then
-              echo "Using copyToDockerDaemon from bin..."
-              ./result/bin/copyToDockerDaemon
-            else
-              echo "Looking for any executable in result..."
-              find ./result -name "*copyToDockerDaemon*" -exec {} \; || true
-              find ./result -type f -executable -exec {} \; || true
-            fi
+            # The result is a JSON file, we need to load it using Docker
+            echo "Reading nix2container JSON manifest..."
+            cat ./result | head -20
+            
+            # Use nix2container's copyTo function or load the JSON directly
+            # Source Nix environment first
+            . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
+            
+            # Load using nix2container copyTo function
+            echo "Loading image using nix2container..."
+            nix --extra-experimental-features "nix-command flakes" run .#${{ matrix.name }}.copyTo -- docker-daemon:
             
             # Get the loaded image details
             echo "=== Available Docker images ==="
