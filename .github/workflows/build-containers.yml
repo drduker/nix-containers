@@ -49,9 +49,6 @@ jobs:
   build-and-push:
     needs: discover-images
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/nix-community/docker-nixpkgs/nix-unstable:latest
-      options: --privileged
     permissions:
       contents: read
       packages: write
@@ -63,19 +60,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Nix configuration
+      - name: Install Nix
         run: |
+          # Install Nix using the official installer
+          curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
+          echo "/nix/var/nix/profiles/default/bin" >> $GITHUB_PATH
+          
+      - name: Source Nix
+        run: |
+          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
           mkdir -p ~/.config/nix
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
-
-      - name: Setup Docker
-        run: |
-          # Install Docker in the Nix container
-          nix profile install nixpkgs#docker
-          # Start Docker daemon
-          dockerd --host=unix:///var/run/docker.sock &
-          sleep 10
 
       - name: Login to Container Registry
         uses: docker/login-action@v3
@@ -86,7 +82,8 @@ jobs:
 
       - name: Build nix2container image
         run: |
-          # All images are now built from root flake
+          # Source Nix environment and build image
+          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
           nix build .#${{ matrix.name }} --print-build-logs
 
       - name: Load image to Docker daemon
