@@ -72,10 +72,15 @@ jobs:
           
           # Install Node.js for GitHub Actions compatibility using explicit experimental features
           nix --extra-experimental-features "nix-command flakes" profile add nixpkgs#nodejs_20
-          # Create symlinks in expected locations
-          mkdir -p /__e/node20/bin
-          ln -sf $(which node) /__e/node20/bin/node
-          ln -sf $(which npm) /__e/node20/bin/npm
+          
+          # Create GitHub Actions compatible directory structure in a writable location
+          mkdir -p /tmp/github-actions/node20/bin
+          ln -sf $(which node) /tmp/github-actions/node20/bin/node
+          ln -sf $(which npm) /tmp/github-actions/node20/bin/npm
+          
+          # Update PATH to include our Node.js installation
+          echo "$(dirname $(which node))" >> $GITHUB_PATH
+          echo "/tmp/github-actions/node20/bin" >> $GITHUB_PATH
 
       - name: Checkout repository
         uses: actions/checkout@v4
