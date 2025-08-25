@@ -49,6 +49,9 @@ jobs:
   build-and-push:
     needs: discover-images
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/nix-community/docker-nixpkgs/nix-unstable:latest
+      options: --privileged
     permissions:
       contents: read
       packages: write
@@ -57,21 +60,30 @@ jobs:
       matrix: ${{ fromJSON(needs.discover-images.outputs.matrix) }}
 
     steps:
+      - name: Setup container environment
+        run: |
+          # Install Node.js for GitHub Actions compatibility
+          nix profile install nixpkgs#nodejs_20
+          # Create symlinks in expected locations
+          mkdir -p /__e/node20/bin
+          ln -sf $(which node) /__e/node20/bin/node
+          ln -sf $(which npm) /__e/node20/bin/npm
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Nix
+      - name: Setup Nix configuration
         run: |
-          # Install Nix using the official installer
-          curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
-          echo "/nix/var/nix/profiles/default/bin" >> $GITHUB_PATH
-          
-      - name: Source Nix
-        run: |
-          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
           mkdir -p ~/.config/nix
           echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
           echo "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}" >> ~/.config/nix/nix.conf
+
+      - name: Setup Docker
+        run: |
+          # Install and start Docker
+          nix profile install nixpkgs#docker
+          dockerd --host=unix:///var/run/docker.sock &
+          sleep 10
 
       - name: Login to Container Registry
         uses: docker/login-action@v3
@@ -82,8 +94,7 @@ jobs:
 
       - name: Build nix2container image
         run: |
-          # Source Nix environment and build image
-          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
+          # Build image using Nix flakes
           nix build .#${{ matrix.name }} --print-build-logs
 
       - name: Load image to Docker daemon
